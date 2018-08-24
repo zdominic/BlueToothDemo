@@ -5,13 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.widget.Button;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final int RESULT_ENABLE = 2018;
     private Button mOpenBtn;
@@ -27,7 +28,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initView() {
-        mOpenBtn = (Button) findViewById(R.id.open_button);
+       findViewById(R.id.open_button).setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
         openBlueTooth();
         startBleConnectService(this);
     }
@@ -64,15 +69,25 @@ public class MainActivity extends AppCompatActivity {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public  void onMsgEvent(MsgEvent event){
         if (event!=null){
-            if (event.getMsg().equalsIgnoreCase("success")){
-                gotoReceiveMsg(event);
+            if (event.getMsg().equalsIgnoreCase("CONNECT_SUCCESS")){  //连接成功
+                try {
+                    BlueToothDataHandler.getDataHandler().openDataSource(event.getObject());
+                    BluetoothSendHandler.getBleSendHandler().openDataSource(event.getObject());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }else if (event.getMsg().equalsIgnoreCase("CONNECT_SUCCESS_SHOW")){     //连接成功并开始展示
+
+            }else if (event.getMsg().equalsIgnoreCase("CONNECT_HALF_INTERRUPT")){
+           //     BlueToothDataHandler.getDataHandler().closeDataSource();
             }
         }
     }
 
     private void gotoReceiveMsg(MsgEvent event) {
-        BlueToothDataHandler.getDataHandler().openDataSource(event.getObject());
+
     }
+
 
 
 }

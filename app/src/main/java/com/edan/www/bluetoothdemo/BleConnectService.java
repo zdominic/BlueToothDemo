@@ -14,6 +14,8 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.util.Set;
@@ -54,7 +56,7 @@ public class BleConnectService extends Service implements Runnable {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothDevice.ACTION_FOUND);   //搜索蓝牙设备的广播监听
+        intentFilter.addAction(BluetoothDevice.ACTION_FOUND);                   //搜索蓝牙设备的广播监听
         intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);    //蓝牙设备配对的监听
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);        //连接中断的监听
         intentFilter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);   //蓝牙搜索任务
@@ -85,6 +87,29 @@ public class BleConnectService extends Service implements Runnable {
         }
     }
 
+    //TODO 当接收到这个消息的时候如何处理，线程模式是否正确
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMsgEvent(MsgEvent event) {
+        if (event != null) {
+            switch (event.getMsg()) {
+                case "CONNECT_HALF_INTERRUPT":
+                    try {
+                        BluetoothSocket socket = (BluetoothSocket) event.getObject();
+                        if (socket != null) {
+                            socket.close();
+                        }
+                        mIsBleConnected = false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Log.e("aaa", " 开启搜素");
+                    startDiscovery();
+                    break;
+            }
+        }
+    }
+
+
     /**
      * 蓝牙连接的广播监听
      */
@@ -98,7 +123,7 @@ public class BleConnectService extends Service implements Runnable {
                     device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     Log.e("aaa", "device = " + device.getName());
                     //找到设备 并且蓝牙未连接
-                    if (!mIsBleConnected) {
+                    if (!mIsBleConnected && BlueToothUtils.checkFoundDevice(device)) {
                         BlueToothUtils.createBond(BluetoothDevice.class, device);
                     }
                     break;
@@ -210,6 +235,7 @@ public class BleConnectService extends Service implements Runnable {
                 if (mSocket != null) {
                     mSocket.connect();
                     mIsBleConnected = true;
+                Log.e("aaa", "000  mSocket  的范德萨发 ");
                 } else {
                     mIsBleConnected = false;
                 }
@@ -223,11 +249,11 @@ public class BleConnectService extends Service implements Runnable {
                     mIsBleConnected = false;
                 }
             } finally {
+                Log.e("aaa", "mIsBleConnected   " + mIsBleConnected);
                 if (!mIsBleConnected) {   //没有连接
                     startDiscovery();
-                }else {
-                    EventBus.getDefault().post(new MsgEvent("SUCCESS",mSocket));
-                    Log.e("aaa", "run 连接成功");
+                } else {
+                    EventBus.getDefault().post(new MsgEvent("CONNECT_SUCCESS", mSocket));
                 }
             }
         }

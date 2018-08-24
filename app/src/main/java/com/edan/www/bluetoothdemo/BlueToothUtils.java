@@ -83,7 +83,7 @@ public class BlueToothUtils {
         }
         return device;
     }
-
+    //00001101-0000-1000-8000-00805F9B34FB  00000000-0000-1000-8000-00805F9B34FB  00001105-0000-1000-8000-00805f9B34FB
     public static final String SPP_UUID = "00001101-0000-1000-8000-00805F9B34FB";
     public static final String TRAGET_DEVICE = "EDAN-SD";
 
@@ -115,5 +115,12 @@ public class BlueToothUtils {
             e.printStackTrace();
         }
         return isRemoveSuccess;
+    }
+
+    public static boolean checkFoundDevice(BluetoothDevice device) {
+        if (device!=null&& device.getName()!=null&&device.getName().equalsIgnoreCase(TRAGET_DEVICE)){
+            return true;
+        }
+        return false;
     }
 }
